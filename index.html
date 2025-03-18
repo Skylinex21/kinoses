@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Плеер для сериала</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/"></script> <!-- Подключаем файл JavaScript -->
+</head>
+<body>
+    
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/html/index.html">video</a></li>
+                <li><a href="/html2/index.html">music</a></li>
+                <li><a href="#download">Скачать видео</a></li>
+                <li><a href=https://t.me/webeternel>TG</a></li>
+              
+            </ul>
+        </nav>
+    </header>
+
+    <img class="girler" src="/photo/girl.png" alt="Гифка" />
+
+    <h2 id="videoTitle">Название первой серии</h2>
+    
+    <iframe id="videoFrame" src="https://rutube.ru/play/embed/852b5911b7ae042b5d4bd14ab374b4ae" allowfullscreen></iframe>
+
+    <div class="controls">
+        <button onclick="prevEpisode()">⏪ Предыдущая серия</button>
+        <button onclick="nextEpisode()">⏩ Следующая серия</button>
+    </div>
+    
+    <div>
+        <label for="videoIdInput">Введите ID видео или ссылку: </label>
+        <input type="text" id="videoIdInput" placeholder="ID видео или ссылка">
+        <label for="videoTitleInput">Введите название фильма: </label>
+        <input type="text" id="videoTitleInput" placeholder="Название фильма">
+        <button onclick="changeVideo()">Сменить видео</button>
+    </div>
+
+    <div id="moviesList" class="movies-list"></div>
+
+    <script>
+        // Загрузка сохранённых фильмов из localStorage
+        function loadMovies() {
+            const savedMovies = localStorage.getItem("movies");
+            if (savedMovies) {
+                const movies = JSON.parse(savedMovies);
+                movies.forEach(movie => displayMovieCard(movie.id, movie.title));
+            }
+        }
+
+        // Сохранение фильмов в localStorage
+        function saveMovies() {
+            localStorage.setItem("movies", JSON.stringify(episodes));
+        }
+
+        let episodes = [
+            { id: "", title: "Первая серия: Название" },
+            { id: "", title: "Вторая серия: Название" }
+        ];
+
+        let episodeNumber = 0;
+
+        // Обновление текущего эпизода
+        function updateEpisode() {
+            let videoUrl;
+            const currentVideoId = episodes[episodeNumber].id;
+
+            if (currentVideoId.startsWith("http")) { 
+                videoUrl = currentVideoId;
+            } else if (currentVideoId.length === 11) {
+                videoUrl = `https://www.youtube.com/embed/${currentVideoId}`;
+            } else {
+                videoUrl = `https://rutube.ru/play/embed/${currentVideoId}`;
+            }
+
+            document.getElementById("videoFrame").src = videoUrl;
+            document.getElementById("videoTitle").innerText = episodes[episodeNumber].title;
+        }
+
+        // Переход к следующей серии
+        function nextEpisode() {
+            if (episodeNumber < episodes.length - 1) {
+                episodeNumber++;
+                updateEpisode();
+            }
+        }
+
+        // Переход к предыдущей серии
+        function prevEpisode() {
+            if (episodeNumber > 0) {
+                episodeNumber--;
+                updateEpisode();
+            }
+        }
+
+        // Смена видео
+        function changeVideo() {
+            let newVideoInput = document.getElementById("videoIdInput").value;
+            let newVideoTitle = document.getElementById("videoTitleInput").value;
+
+            let newVideoId = extractVideoId(newVideoInput);
+
+            if (newVideoId && newVideoTitle) {
+                episodes.push({ id: newVideoId, title: newVideoTitle });
+                updateEpisode();
+                displayMovieCard(newVideoId, newVideoTitle);
+                saveMovies();
+
+                document.getElementById("videoIdInput").value = '';
+                document.getElementById("videoTitleInput").value = '';
+            } else {
+                alert("Пожалуйста, введите ссылку или ID видео и название фильма!");
+            }
+        }
+
+        // Извлечение ID из ссылки YouTube или RuTube
+        function extractVideoId(url) {
+            let videoId = '';
+            
+            const youtubePattern = /(?:https?:\/\/(?:www\.)?youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S+?v=|.*[?&]v=))([^"&?/\s]{11})/;
+            const youtubeMatch = url.match(youtubePattern);
+            if (youtubeMatch) {
+                videoId = youtubeMatch[1];
+            }
+
+            const rutubePattern = /rutube\.ru\/play\/embed\/([a-z0-9]+)/;
+            const rutubeMatch = url.match(rutubePattern);
+            if (rutubeMatch) {
+                videoId = rutubeMatch[1];
+            }
+
+            return videoId;
+        }
+
+        // Отображение карточки фильма
+        function displayMovieCard(videoId, videoTitle) {
+            const moviesList = document.getElementById("moviesList");
+
+            let movieCard = document.createElement("div");
+            movieCard.classList.add("movie-card");
+
+            movieCard.innerHTML = `
+                <div class="video-preview" style="background-image: url('https://img.youtube.com/vi/${videoId}/hqdefault.jpg');"></div>
+                <div class="content">
+                    <h3>${videoTitle}</h3>
+                    <p>ID: ${videoId}</p>
+                    <button onclick="loadMovie('${videoId}', '${videoTitle}')">Смотреть</button>
+                    <button onclick="deleteMovie('${videoId}')">Удалить</button>
+                </div>
+            `;
+
+            moviesList.appendChild(movieCard);
+        }
+
+        // Загрузка фильма при клике на карточку
+        function loadMovie(videoId, videoTitle) {
+            let videoUrl;
+            if (videoId.startsWith("http")) { 
+                videoUrl = videoId;
+            } else if (videoId.length === 11) {
+                videoUrl = `https://www.youtube.com/embed/${videoId}`;
+            } else {
+                videoUrl = `https://rutube.ru/play/embed/${videoId}`;
+            }
+
+            document.getElementById("videoFrame").src = videoUrl;
+            document.getElementById("videoTitle").innerText = videoTitle;
+        }
+
+        // Удаление фильма
+        function deleteMovie(videoId) {
+            episodes = episodes.filter(episode => episode.id !== videoId);
+            const moviesList = document.getElementById("moviesList");
+            moviesList.innerHTML = '';
+            episodes.forEach(episode => displayMovieCard(episode.id, episode.title));
+            saveMovies();
+        }
+
+        // Загружаем фильмы при старте
+        window.onload = loadMovies;
+    </script>
+    
+
+</body>
+</html>
